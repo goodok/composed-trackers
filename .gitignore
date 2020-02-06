@@ -127,3 +127,6 @@ dmypy.json
 
 # Pyre type checker
 .pyre/
+
+1_build.sh
+2_upload_to_pip.sh
