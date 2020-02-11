@@ -4,14 +4,9 @@ import pandas as pd
 import warnings
 import tempfile
 import traceback
-from shutil import copyfile   # https://stackoverflow.com/questions/123198/how-do-i-copy-a-file-in-python
-
-# https://docs.neptune.ml/neptune-client/docs/experiment.html
-# https://pytorch.org/docs/stable/tensorboard.html
-
 
 from mmcv.fileio.io import dump
-from mmdet.utils.registry import Registry, build_from_cfg
+from .utils.registry import Registry, build_from_cfg
 
 from .loggers.simple import SimpleLogger
 from .loggers.neptune import NeptuneLogger

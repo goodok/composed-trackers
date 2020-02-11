@@ -57,8 +57,7 @@ dev_requirements = {'dev': to_list("""
     graphviz
 """)}
 
-requirements = ['torch>=1.0.0', 'trimesh', 'humanize', 'ipyvolume', 'pythreejs', 'joblib', 'autopep8', 'jupyter', 'jupyter_contrib_nbextensions',
-                'PyChromeDevTools', 'matplotlib', 'pandas', 'tqdm', 'dataclasses', 'neptune-client', 'fastai_sparse', 'kekas>=0.1.23', 'seaborn', 'plotly', 'albumentations', 'mmcv', 'mmdet']
+requirements = ['humanize', 'joblib', 'autopep8', 'matplotlib', 'pandas', 'tqdm', 'dataclasses','mmcv', 'addict', 'six']
 
 
 # pyquaternion, tensorboardX scikit-image

@@ -8,6 +8,7 @@ import numpy as np
 import pandas as pd
 import re
 import contextlib
+import six
 
 import json
 import os
@@ -15,6 +16,12 @@ from IPython.display import display, HTML
 import warnings
 from collections import OrderedDict
 import platform
+
+
+try:
+    import collections.abc as collections_abc
+except ImportError:
+    import collections as collections_abc
 
 
 def is_notebook():
@@ -40,6 +47,19 @@ def load_json(fname):
     fname = str(fname)
     with open(fname) as f:
         return json.load(f)
+
+# from mmcv begin
+
+def is_str(x):
+    """Whether the input is an string instance."""
+    return isinstance(x, six.string_types)
+
+
+def check_file_exist(filename, msg_tmpl='file "{}" does not exist'):
+    if not osp.isfile(filename):
+        raise FileNotFoundError(msg_tmpl.format(filename))
+
+# from mmcv end
 
 
 @contextlib.contextmanager
