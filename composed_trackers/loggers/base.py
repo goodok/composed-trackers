@@ -20,8 +20,8 @@ from mmcv.fileio.io import dump
     
 
 
-class BaseLogger():
-    """Base class for loggers."""
+class BaseTracker():
+    """Base class for trackers."""
 
     def __init__(self):
         pass
@@ -49,8 +49,6 @@ class BaseLogger():
     def log_text_as_artifact(self, text, destination=None, existed_temp_file=None):
         raise NotImplementedError
     
-    
-    # TODO: define as methods with self
     # aliases
     def send_metric(self, *args, **kwargs):
         self.log_metric( *args, **kwargs)

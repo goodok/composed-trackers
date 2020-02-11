@@ -8,11 +8,11 @@ import neptune as neptune
 from neptune.internal.streams.channel_writer import ChannelWriter
 from neptune.internal.channels.channels import ChannelNamespace
 
-from .base import BaseLogger
+from .base import BaseTracker
 
-class NeptuneLogger(BaseLogger):
+class NeptuneTracker(BaseTracker):
     
-    def __init__(self, name='name', description='Loggers', tags=[], debug=False, 
+    def __init__(self, name='name', description='Trackers', tags=[], debug=False, 
                  params={},
                  properties={},
                  project=None,
@@ -156,7 +156,7 @@ class NeptuneLogger(BaseLogger):
 
 
     def stop(self):
-        print('NeptuneLogger stopping... ')
+        print('NeptuneTracker stopping... ')
         print(self.internal_handler)
         if self.internal_handler is not None:
             self.internal_handler.stop()

@@ -13,11 +13,11 @@ from mmcv.fileio.io import dump
 from ..utils.utils import is_notebook
 from ..utils.streams.stdstream import StdOutStream, StdErrStream, FileWriter
 
-from .base import BaseLogger
+from .base import BaseTracker
 
 
-class SimpleLogger(BaseLogger):
-    def __init__(self, name='name', description='Loggers', tags=[], debug=False,
+class SimpleTracker(BaseTracker):
+    def __init__(self, name='name', description='Base tracker', tags=[], debug=False,
                  root_path='./logbook',
                  exp_id=None,
                  exp_id_template='LOG-{AUTO}',
@@ -91,7 +91,7 @@ class SimpleLogger(BaseLogger):
 
 
     def stop(self):
-        print("BaseLogger stopping...", end=' ')
+        print("BaseTracker stopping...", end=' ')
         if self._stdout_stream:
             self._stdout_stream.close()
         if self._stderr_stream:
@@ -223,7 +223,7 @@ class SimpleLogger(BaseLogger):
 
     def log_metric(self, name, x, y=None):
         if self.verbose:
-            print('BaseLogger: send_metric: ', name, x, y)
+            print('BaseTracker: send_metric: ', name, x, y)
 
         #if self.log_metrics:
         if True:
