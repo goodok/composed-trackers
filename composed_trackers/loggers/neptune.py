@@ -61,14 +61,14 @@ class NeptuneLogger(BaseLogger):
                          project_qualified_name=self.project)
         
         
-        self.internal = neptune.create_experiment(name=self.name,
+        self.internal_handler = neptune.create_experiment(name=self.name,
                                                          params=self.params,
                                                          properties=self.properties,
                                                          tags=self.tags,
                                                          #upload_source_files=self.upload_source_files,
                                                          **self._kwargs)
         
-        self.exp_id = self.internal.id
+        self.exp_id = self.internal_handler.id
         
     
     def initialize_old(self, neptune={}, **kwargs):
@@ -157,9 +157,9 @@ class NeptuneLogger(BaseLogger):
 
     def stop(self):
         print('NeptuneLogger stopping... ')
-        print(self.internal)
-        if self.internal is not None:
-            self.internal.stop()
+        print(self.internal_handler)
+        if self.internal_handler is not None:
+            self.internal_handler.stop()
             print('Stopped.')
         
         #if self._stdout_stream:
@@ -168,29 +168,29 @@ class NeptuneLogger(BaseLogger):
             #self._stderr_stream.close()
 
     def log_artifact(self, artifact_filename, destination=None, local_only=False):
-        if not local_only and self.internal is not None:
-            self.internal.log_artifact(artifact_filename, destination)
+        if not local_only and self.internal_handler is not None:
+            self.internal_handler.log_artifact(artifact_filename, destination)
 
     def save_and_log_artifact(self, value, filename='example.txt', local_only=False):
         """
         Save string as file and send it to remote.
         """
-        if not local_only and self.internal is not None:
+        if not local_only and self.internal_handler is not None:
             artifact_filename = self._dir_artifacts / filename
-            self.internal.log_artifact(artifact_filename)
+            self.internal_handler.log_artifact(artifact_filename)
 
     def set_property(self, key, value):
-        if self.internal is not None:
-            self.internal.set_property(key, value)
+        if self.internal_handler is not None:
+            self.internal_handler.set_property(key, value)
 
     def append_tag(self, tag, *tags):
-        if self.internal is not None:
-            self.internal.append_tag(tag, *tags)
+        if self.internal_handler is not None:
+            self.internal_handler.append_tag(tag, *tags)
 
 
     def log_metric(self, name, x, y=None):
-        if self.internal is not None:
-            self.internal.send_metric(name, x, y)
+        if self.internal_handler is not None:
+            self.internal_handler.send_metric(name, x, y)
 
 
 class StdStreamWithUpload(object):
