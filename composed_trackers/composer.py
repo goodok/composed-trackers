@@ -8,9 +8,9 @@ import traceback
 from mmcv.fileio.io import dump
 from .utils.registry import Registry, build_from_cfg
 
-from .loggers.simple import SimpleTracker
-from .loggers.neptune import NeptuneTracker
-from .loggers.base import BaseTracker
+from .trackers.simple import SimpleTracker
+from .trackers.neptune import NeptuneTracker
+from .trackers.base import BaseTracker
 
 from .utils.log import print_color
 
