@@ -31,6 +31,8 @@ class ComposedLoggers(BaseLogger):
         self.cfg = cfg
         
         self._initialize_fn = initialize_fn
+        
+        self.initialize()
 
     def initialize(self):
         self.initialize_fn()
@@ -151,3 +153,7 @@ class ComposedLoggers(BaseLogger):
     
     # aliases
     save_and_log_artifact = log_text_as_artifact
+
+
+
+LOGGERS.register_module(ComposedLoggers)
