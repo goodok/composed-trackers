@@ -3,17 +3,14 @@ from __future__ import division
 
 import sys
 import subprocess
-import humanize
 import numpy as np
-import pandas as pd
 import re
 import contextlib
 import six
-
 import json
 import os
+import os.path
 from IPython.display import display, HTML
-import warnings
 from collections import OrderedDict
 import platform
 
@@ -31,9 +28,8 @@ def is_notebook():
         return True
     except Exception:
         return False
-    
-    
-    
+
+
 def save_json(fname, d, pretty=False):
     fname = str(fname)
     with open(fname, 'w') as f:
@@ -48,15 +44,15 @@ def load_json(fname):
     with open(fname) as f:
         return json.load(f)
 
-# from mmcv begin
 
+# from mmcv begin
 def is_str(x):
     """Whether the input is an string instance."""
     return isinstance(x, six.string_types)
 
 
 def check_file_exist(filename, msg_tmpl='file "{}" does not exist'):
-    if not osp.isfile(filename):
+    if not os.path.isfile(filename):
         raise FileNotFoundError(msg_tmpl.format(filename))
 
 # from mmcv end
@@ -74,9 +70,9 @@ def printoptions(*args, **kwargs):
 
 def wide_notebook(percents=70):
     display(HTML("<style>.container { width:70% !important; }</style>"))
-    
+
     from .log import log_options
-    
+
     log_options['max_name_length'] = 25
     log_options['max_shape_length'] = 20
 
@@ -139,13 +135,12 @@ def watermark(packages=['python', 'virtualenv', 'keras', 'tensorflow', 'nvidia',
 
     if 'keras' in packages:
         lines['keras'] = find_in_lines(pip_list, 'Keras')
-        
+
     if 'tensorflow' in packages:
         lines['tensorflow-gpu'] = find_in_lines(pip_list, 'tensorflow-gpu')
-        
+
     if 'torch' in packages:
         lines['torch'] = find_in_lines(pip_list, 'torch')
-
 
     if 'fastai' in packages:
         try:
@@ -180,7 +175,6 @@ def watermark(packages=['python', 'virtualenv', 'keras', 'tensorflow', 'nvidia',
         return s
 
 
-
 def df_order_columns(df, columns_ordered=[]):
     """
     Order some columns, and remain other as was
@@ -211,4 +205,3 @@ def df_split_random(df, N, random_seed=None):
     df1 = df.iloc[shuffled[:N]]
     df2 = df.iloc[shuffled[N:]]
     return df1, df2
-

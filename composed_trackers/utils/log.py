@@ -1,4 +1,5 @@
 import numpy as np
+import warnings
 
 
 class bcolors:
@@ -33,7 +34,6 @@ def print_color(text, color='green', bold=False, underline=False):
     print(text, end='')
 
     print(bcolors.ENDC)
-
 
 
 log_options = {
@@ -128,8 +128,8 @@ def log_dict(text, d=None):
             else:
                 log(key, value, indent=indent)
         except Exception as e:
-            # warnings.warn(f"Can't log key='{key}': {e}")
-            warn_always(f"Can't log key='{key}': {e}")
+            warnings.warn(f"Can't log key='{key}': {e}")
+            # warn_always(f"Can't log key='{key}': {e}")
 
 
 def calc_and_format_minmax(array, fn='min'):

@@ -7,11 +7,11 @@
 #  - .update_dotted
 #  - .setattr_dotted_name
 #  - .to_flatten
-#  - ._filename_ext 
-
-
+#  - ._filename_ext
+#  ConfigFlatten
 
 import os.path as osp
+from pathlib import Path
 import sys
 from argparse import ArgumentParser
 from importlib import import_module
@@ -178,12 +178,12 @@ class Config(object):
     def update_dotted(self, dotted_names_dict, verbose=False):
         is_updated = False
         self._updates_list = []
-        for name, value in  dotted_names_dict.items():
+        for name, value in dotted_names_dict.items():
             isu = self.setattr_dotted_name(self, name, value, verbose=verbose)
             is_updated = is_updated or isu
 
     def setattr_dotted_name(self, a, name, value, verbose=False):
-        
+
         names = name.split('.')
         last_name = names[-1]
         n = len(names)
@@ -196,7 +196,7 @@ class Config(object):
         is_updated = old_value != value
         if is_updated:
             setattr(a, last_name, value)
-        
+
         if verbose:
             if is_updated:
                 s = f'{name:20}: {old_value:20} ---> {value}'
@@ -213,3 +213,34 @@ class Config(object):
         flatten = ConfigFlatten()
         flatten_add_args(flatten, self, sep=sep)
         return flatten
+
+
+class ConfigFlatten():
+    def __init__(self):
+        self._dict = {}
+
+    def add_item(self, key, value, **kwargs):
+        self._dict[key] = value
+
+    @property
+    def __dict__(self):
+        return self._dict
+
+
+def flatten_add_args(flatten, cfg, prefix='', sep='.', excludes=[]):
+    for k, v in cfg.items():
+        if isinstance(v, str):
+            flatten.add_item(prefix + k, v)
+        elif isinstance(v, int):
+            flatten.add_item(prefix + k, v, type=int)
+        elif isinstance(v, float):
+            flatten.add_item(prefix + k, v, type=float)
+        elif isinstance(v, bool):
+            flatten.add_item(prefix + k, v, action='store_true')
+        elif isinstance(v, dict):
+            flatten_add_args(flatten, v, k + sep, sep=sep)
+        elif isinstance(v, collections_abc.Iterable):
+            flatten.add_item(prefix + k, str(v))
+        else:
+            print('connot parse key {} of type {}'.format(prefix + k, type(v)))
+    return flatten

@@ -1,13 +1,9 @@
-from pathlib import Path
 import os
-import pandas as pd
 import warnings
 import tempfile
 import traceback
 
-from mmcv.fileio.io import dump
 from .utils.registry import Registry, build_from_cfg
-
 from .trackers.simple import SimpleTracker
 from .trackers.neptune import NeptuneTracker
 from .trackers.base import BaseTracker
@@ -25,13 +21,13 @@ class ComposedTrackers(BaseTracker):
         self.description = description
         self.tags = tags
         self.params = params
-        
+
         self.debug = debug
-        
+
         self.cfg = cfg
-        
+
         self._initialize_fn = initialize_fn
-        
+
         self.initialize()
 
     def initialize(self):
@@ -48,34 +44,31 @@ class ComposedTrackers(BaseTracker):
         Default initialize function.
         """
         self.trackers = []
-        
+
         default_keys = ['name', 'description', 'tags', 'params', 'debug']
         default_args = dict([(key, getattr(self, key)) for key in default_keys])
-        
         suggested_id = None
 
         for tracker_name in self.cfg['trackers']:
-            
-                cfg = default_args.copy()
-                cfg['type'] = tracker_name
-                if suggested_id is not None:
-                    cfg['exp_id'] = suggested_id
-                cfg.update(self.cfg[tracker_name])
-                
-                tracker = build_from_cfg(cfg, TRACKERS)
-                tracker.initialize()
-                if suggested_id is None:
-                    suggested_id = tracker.exp_id
+            cfg = default_args.copy()
+            cfg['type'] = tracker_name
+            if suggested_id is not None:
+                cfg['exp_id'] = suggested_id
+            cfg.update(self.cfg[tracker_name])
 
-                self.trackers.append(tracker)
-        pass
+            tracker = build_from_cfg(cfg, TRACKERS)
+            tracker.initialize()
+            if suggested_id is None:
+                suggested_id = tracker.exp_id
+
+            self.trackers.append(tracker)
 
     def describe(self, ids_only=False):
         if not ids_only:
             keys = ['name', 'description', 'tags', 'debug']
             for key in keys:
                 print(f'  {key:12}:', getattr(self, key, None))
-        
+
             print('  trackers:', self.cfg['trackers'])
             for tracker in self.trackers:
                 print()
@@ -89,16 +82,16 @@ class ComposedTrackers(BaseTracker):
         for tracker in self.trackers:
             try:
                 tracker.stop()
-            except:
+            except Exception as e:
                 warnings.warn(f"Can't .stop for tracker {tracker}. {e}", UserWarning)
-    
+
     def set_property(self, key, value):
         for tracker in self.trackers:
             try:
                 tracker.set_property(key, value)
             except Exception as e:
                 warnings.warn(f"Can't .set_property for tracker {tracker}. {e}", UserWarning)
-    
+
     def append_tag(self, tag, *tags):
         for tracker in self.trackers:
             try:
@@ -106,7 +99,6 @@ class ComposedTrackers(BaseTracker):
             except Exception as e:
                 warnings.warn(f"Can't .append_tag for tracker {tracker}. {e}", UserWarning)
 
-    
     def log_metric(self, name, x, y=None):
         for tracker in self.trackers:
             try:
@@ -116,22 +108,21 @@ class ComposedTrackers(BaseTracker):
                 print(e)
                 traceback.print_exc()
 
-    
     def log_artifact(self, filename, destination=None):
         for tracker in self.trackers:
             try:
                 tracker.log_artifact(filename, destination)
             except Exception as e:
                 warnings.warn(f"Can't .log_artifact for tracker {tracker} {e}", UserWarning)
-    
+
     def log_text_as_artifact(self, text, destination=None, existed_temp_file=None):
         fd = None
         try:
             fd, path = tempfile.mkstemp()
-            
+
             with os.fdopen(fd, 'w') as tmp:
                 tmp.write(text)
-            
+
             for tracker in self.trackers:
                 try:
                     tracker.log_artifact(path, destination)
@@ -142,15 +133,14 @@ class ComposedTrackers(BaseTracker):
         finally:
             if fd is not None:
                 os.remove(path)
-    
+
     @property
     def path(self):
         for tracker in self.trackers:
             path = getattr(tracker, 'path', None)
             if path is not None:
                 return path
-        
-    
+
     # aliases
     save_and_log_artifact = log_text_as_artifact
 

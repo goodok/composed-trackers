@@ -21,13 +21,13 @@ class SimpleTracker(BaseTracker):
                  root_path='./logbook',
                  exp_id=None,
                  exp_id_template='LOG-{AUTO}',
-                 exp_id_template_debug = None,
+                 exp_id_template_debug=None,
                  verbose=0,
                  params={},             # Parameters of the experiment. After experiment creation params are read-only
                  properties={},         # Properties of the experiment. They are editable after experiment is created.
                  log_stdout=True,       # Not used when is_notebook==True
                  log_stderr=True,
-                 #log_metrics=True,
+                 # log_metrics=True,
                  **kwargs):
         self.name = name
         self.description = description
@@ -49,12 +49,12 @@ class SimpleTracker(BaseTracker):
         self._kwargs = kwargs
         self._stdout_stream = None
         self._stderr_stream = None
-        #self.log_metrics = log_metrics
+        # self.log_metrics = log_metrics
         self._metrics = {}
 
         self.root_path = Path(self.root_path)
 
-        #self.initialize(**kwargs)
+        # self.initialize(**kwargs)
 
     def describe(self):
         print(self.__class__.__name__)
@@ -65,7 +65,7 @@ class SimpleTracker(BaseTracker):
 
         self.create_id()
         self.makedir()
-        #self.intercept_std()
+        # self.intercept_std()
         self._dir_artifacts = self.path / 'artifacts'
         self.dump_params()
         self.dump_properties()
@@ -89,7 +89,6 @@ class SimpleTracker(BaseTracker):
                 filewriter = FileWriter(fn_log)
                 self._stdout_stream = StdErrStream([filewriter])
 
-
     def stop(self):
         print("BaseTracker stopping...", end=' ')
         if self._stdout_stream:
@@ -101,7 +100,6 @@ class SimpleTracker(BaseTracker):
         self.dump_tags()
         self.dump_metrics()
         print("Ok")
-
 
     def get_next_path(self):
         """
@@ -125,7 +123,7 @@ class SimpleTracker(BaseTracker):
         # We call this interval (a..b] and narrow it down until a + 1 = b
         a, b = (i // 2, i)
         while a + 1 < b:
-            c = (a + b) // 2 # interval midpoint
+            c = (a + b) // 2        # interval midpoint
             a, b = (c, b) if self.get_i_path(c).exists() else (a, c)
 
         p = self.get_i_path(b)
@@ -136,7 +134,7 @@ class SimpleTracker(BaseTracker):
         templ = self.exp_id_template
         if self.debug:
             templ = self.exp_id_template_debug
-        expid = templ.format(AUTO=i) 
+        expid = templ.format(AUTO=i)
         return self.root_path / expid
 
     def makedir(self, exist_ok=False):
@@ -152,7 +150,7 @@ class SimpleTracker(BaseTracker):
         dump(list(self.tags), self.path / 'tags.yaml')
 
     def dump_metrics(self):
-        #if self.log_metrics:
+        # if self.log_metrics:
         dump(self._metrics, self.path / 'metrics.json')
 
         try:
@@ -160,8 +158,6 @@ class SimpleTracker(BaseTracker):
             df.to_csv(self.path / 'metrics.csv', index=False)
         except Exception as e:
             warnings.warn(f"Can't convert and save metrics to DataFrame. {e}")
-
-
 
     def log_artifact(self, artifact_filename, destination=None, local_only=False):
         # experiment.log_artifact('images/wrong_prediction_1.png')
@@ -186,12 +182,9 @@ class SimpleTracker(BaseTracker):
 
         if destination.exists():
             warnings.warn(f'destination {destination} is owerwriten.')
-            
+
         copyfile(artifact_filename, destination)
 
-    #send_artifact = log_artifact
-    
-    # log_text == log_and_send
     def save_and_log_artifact(self, value, filename='example.txt', local_only=False):
         """
         Save string as file and send it to remote.
@@ -206,8 +199,6 @@ class SimpleTracker(BaseTracker):
         with open(destination, 'w') as f:
             f.write(value)
 
-    #log_text = log_and_send
-
     def set_property(self, key, value):
         self.properties[key] = value
         self.dump_properties()
@@ -217,7 +208,7 @@ class SimpleTracker(BaseTracker):
             tags_list = tag
         else:
             tags_list = [tag] + list(tags)
-            
+
         self.tags = self.tags | set(tags_list)
         self.dump_tags()
 
@@ -225,7 +216,7 @@ class SimpleTracker(BaseTracker):
         if self.verbose:
             print('BaseTracker: send_metric: ', name, x, y)
 
-        #if self.log_metrics:
+        # if self.log_metrics:
         if True:
             try:
                 if name not in self._metrics:
@@ -242,11 +233,9 @@ class SimpleTracker(BaseTracker):
             except Exception as e:
                 warnings.warn(f"Can't log metric '{name}': {e}")
 
-    
-
     def metrics_to_df(self):
-        #if not self.log_metrics:
-        #    return
+        # if not self.log_metrics:
+        #     return
         metrics = self._metrics
         # epochs/batch dict
         x = {}
@@ -258,4 +247,6 @@ class SimpleTracker(BaseTracker):
                 x[i][name] = d['y']
         df = pd.DataFrame([row for i, row in x.items()])
         return df
-    
+
+    # send_artifact = log_artifact
+    # log_text = log_and_send
