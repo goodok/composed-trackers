@@ -21,10 +21,13 @@ except ImportError:
     import collections as collections_abc
 
 
+__all__ = ['collections_abc']
+
+
 def is_notebook():
     try:
         # pylint: disable=pointless-statement,undefined-variable
-        get_ipython
+        get_ipython         # noqa: F821
         return True
     except Exception:
         return False
@@ -56,6 +59,22 @@ def check_file_exist(filename, msg_tmpl='file "{}" does not exist'):
         raise FileNotFoundError(msg_tmpl.format(filename))
 
 # from mmcv end
+
+
+def is_int(x):
+    """Whether the input is an integer instance.
+    """
+    # TODO: add np.int64 and so on
+    return isinstance(x, six.integer_types)
+
+
+def is_float_convertable(value):
+    try:
+        _ = float(value)
+    except ValueError:
+        return False
+    else:
+        return True
 
 
 @contextlib.contextmanager

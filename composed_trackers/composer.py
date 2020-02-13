@@ -20,7 +20,7 @@ class ComposedTrackers(BaseTracker):
         self.name = name
         self.description = description
         self.tags = tags
-        self.params = params
+        self.params = dict(params)
 
         self.debug = debug
 
@@ -50,14 +50,17 @@ class ComposedTrackers(BaseTracker):
         suggested_id = None
 
         for tracker_name in self.cfg['trackers']:
-            cfg = default_args.copy()
-            cfg['type'] = tracker_name
-            if suggested_id is not None:
-                cfg['exp_id'] = suggested_id
-            cfg.update(self.cfg[tracker_name])
+            if isinstance(tracker_name, BaseTracker):
+                tracker = tracker_name
+            else:
+                cfg = default_args.copy()
+                cfg['type'] = tracker_name
+                if suggested_id is not None:
+                    cfg['exp_id'] = suggested_id
+                cfg.update(self.cfg[tracker_name])
 
-            tracker = build_from_cfg(cfg, TRACKERS)
-            tracker.initialize()
+                tracker = build_from_cfg(cfg, TRACKERS)
+
             if suggested_id is None:
                 suggested_id = tracker.exp_id
 
@@ -65,11 +68,11 @@ class ComposedTrackers(BaseTracker):
 
     def describe(self, ids_only=False):
         if not ids_only:
+            print('ComposedTrackers description:')
             keys = ['name', 'description', 'tags', 'debug']
             for key in keys:
                 print(f'  {key:12}:', getattr(self, key, None))
 
-            print('  trackers:', self.cfg['trackers'])
             for tracker in self.trackers:
                 print()
                 tracker.describe()
@@ -77,6 +80,7 @@ class ComposedTrackers(BaseTracker):
             for tracker in self.trackers:
                 print(f'{tracker.__class__.__name__:15}:', end=' ')
                 print_color(f'{tracker.exp_id}', 'green')
+        print()
 
     def stop(self):
         for tracker in self.trackers:
@@ -99,12 +103,26 @@ class ComposedTrackers(BaseTracker):
             except Exception as e:
                 warnings.warn(f"Can't .append_tag for tracker {tracker}. {e}", UserWarning)
 
-    def log_metric(self, name, x, y=None):
+    def log_metric(self, name, value, index=None, timestamp=None, autoincrement_index=True):
+        if index is None:
+            assert autoincrement_index is True, 'Only autoincrement of index is possible for some loggers.'
+
         for tracker in self.trackers:
             try:
-                tracker.log_metric(name, x, y)
+                tracker.log_metric(name, value, index, timestamp, autoincrement_index)
             except Exception as e:
                 warnings.warn(f"Can't .log_metric for tracker {tracker}. {e}", UserWarning)
+                print(e)
+                traceback.print_exc()
+
+    def log_text(self, name, value, index=None, timestamp=None, autoincrement_index=True):
+        if index is None:
+            assert autoincrement_index is True, 'Only autoincrement of index is possible for some loggers.'
+        for tracker in self.trackers:
+            try:
+                tracker.log_text(name, value, index, timestamp, autoincrement_index)
+            except Exception as e:
+                warnings.warn(f"Can't .log_text for tracker {tracker}. {e}", UserWarning)
                 print(e)
                 traceback.print_exc()
 

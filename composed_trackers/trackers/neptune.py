@@ -37,6 +37,9 @@ class NeptuneTracker(BaseTracker):
 
         self._kwargs = kwargs
 
+        self.initialized = False
+        self.initialize()
+
     def describe(self):
         print(self.__class__.__name__)
         print('    exp_id:', self.exp_id)
@@ -53,34 +56,34 @@ class NeptuneTracker(BaseTracker):
             neptune.init(project_qualified_name='dry-run/project',
                          backend=neptune.OfflineBackend())
         else:
-            neptune.init(api_token=self.api_key,
-                         project_qualified_name=self.project)
+            neptune.init(project_qualified_name=self.project)
 
         self.internal_handler = neptune.create_experiment(name=self.name,
                                                           params=self.params,
                                                           properties=self.properties,
-                                                          tags=self.tags,
+                                                          tags=tuple(self.tags),
                                                           # upload_source_files=self.upload_source_files,
                                                           **self._kwargs)
-        self.exp_id = self.internal_handler.id
+        exp_id = self.internal_handler.id
+        if isinstance(exp_id, str):
+            self.exp_id = exp_id
+        self.initialized = True
 
     def intercept_std(self):
         return
 
     def stop(self):
-        print('NeptuneTracker stopping... ')
-        print(self.internal_handler)
-        if self.internal_handler is not None:
-            self.internal_handler.stop()
-            print('Stopped.')
+        print('NeptuneTracker stopping... ', end=' ')
+        self.internal_handler.stop()
+        print('Ok.')
 
         # if self._stdout_stream:
-            # self._stdout_stream.close()
+        #    self._stdout_stream.close()
         # if self._stderr_stream:
-            # self._stderr_stream.close()
+        #    self._stderr_stream.close()
 
     def log_artifact(self, artifact_filename, destination=None, local_only=False):
-        if not local_only and self.internal_handler is not None:
+        if not local_only:
             self.internal_handler.log_artifact(artifact_filename, destination)
 
     def save_and_log_artifact(self, value, filename='example.txt', local_only=False):
@@ -92,16 +95,29 @@ class NeptuneTracker(BaseTracker):
             self.internal_handler.log_artifact(artifact_filename)
 
     def set_property(self, key, value):
-        if self.internal_handler is not None:
-            self.internal_handler.set_property(key, value)
+        self.internal_handler.set_property(key, value)
 
     def append_tag(self, tag, *tags):
-        if self.internal_handler is not None:
-            self.internal_handler.append_tag(tag, *tags)
+        self.internal_handler.append_tag(tag, *tags)
 
-    def log_metric(self, name, x, y=None):
-        if self.internal_handler is not None:
-            self.internal_handler.send_metric(name, x, y)
+    def log_metric(self, name, value, index=None, timestamp=None, autoincrement_index=True):
+        # trasnform params from canonic
+        if index is None:
+            x = value
+            y = None
+        else:
+            x = index
+            y = value
+        self.internal_handler.send_metric(name, x, y, timestamp)
+
+    def log_text(self, name, value, index=None, timestamp=None, autoincrement_index=True):
+        if index is None:
+            x = value
+            y = None
+        else:
+            x = index
+            y = value
+        self.internal_handler.log_text(name, x, y)
 
 
 class StdStreamWithUpload(object):

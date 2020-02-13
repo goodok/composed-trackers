@@ -130,3 +130,5 @@ dmypy.json
 
 1_build.sh
 2_upload_to_pip.sh
+
+examples/

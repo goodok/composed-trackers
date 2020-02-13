@@ -27,7 +27,10 @@ class BaseTracker():
     def append_tag(self, tag, *tags):
         raise NotImplementedError
 
-    def log_metric(self, name, x, y=None):
+    def log_metric(self, name, value, index=None, timestamp=None, autoincrement_index=True):
+        raise NotImplementedError
+
+    def log_text(self, name, value, index=None, timestamp=None, autoincrement_index=True):
         raise NotImplementedError
 
     def log_artifact(self, filename, destination=None):
@@ -36,10 +39,15 @@ class BaseTracker():
     def log_text_as_artifact(self, text, destination=None, existed_temp_file=None):
         raise NotImplementedError
 
+    def delete_artifacts(self, path):
+        raise NotImplementedError
+
     # aliases
     def send_metric(self, *args, **kwargs):
         self.log_metric(*args, **kwargs)
 
-    # aliases
     def send_artifact(self, *args, **kwargs):
         self.log_artifact(*args, **kwargs)
+
+    def send_text(self, *args, **kwargs):
+        self.send_text(*args, **kwargs)

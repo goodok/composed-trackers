@@ -2,6 +2,7 @@ from pathlib import Path
 import os
 import pandas as pd
 import warnings
+import time
 from shutil import copyfile   # https://stackoverflow.com/questions/123198/how-do-i-copy-a-file-in-python
 
 # https://docs.neptune.ml/neptune-client/docs/experiment.html
@@ -10,7 +11,7 @@ from shutil import copyfile   # https://stackoverflow.com/questions/123198/how-d
 
 from mmcv.fileio.io import dump
 
-from ..utils.utils import is_notebook
+from ..utils.utils import is_notebook, is_int, is_str, is_float_convertable
 from ..utils.streams.stdstream import StdOutStream, StdErrStream, FileWriter
 
 from .base import BaseTracker
@@ -20,7 +21,7 @@ class SimpleTracker(BaseTracker):
     def __init__(self, name='name', description='Base tracker', tags=[], debug=False,
                  root_path='./logbook',
                  exp_id=None,
-                 exp_id_template='LOG-{AUTO}',
+                 exp_id_template='LOG-{i}',
                  exp_id_template_debug=None,
                  verbose=0,
                  params={},             # Parameters of the experiment. After experiment creation params are read-only
@@ -51,10 +52,12 @@ class SimpleTracker(BaseTracker):
         self._stderr_stream = None
         # self.log_metrics = log_metrics
         self._metrics = {}
+        self._texts = {}
 
         self.root_path = Path(self.root_path)
 
-        # self.initialize(**kwargs)
+        self.initialized = False
+        self.initialize()
 
     def describe(self):
         print(self.__class__.__name__)
@@ -70,36 +73,15 @@ class SimpleTracker(BaseTracker):
         self.dump_params()
         self.dump_properties()
         self.dump_tags()
+        self.initialized = True
 
     def create_id(self):
-
-        self.path = self.get_next_path()
-
-    def intercept_std(self):
-        self._stdout_stream = None
-        self._stderr_stream = None
-
-        if not is_notebook():
-            if self.log_stdout:
-                fn_log = self.path / 'stdout.txt'
-                filewriter = FileWriter(fn_log)
-                self._stdout_stream = StdOutStream([filewriter])
-            if self.log_stderr:
-                fn_log = self.path / 'stderr.txt'
-                filewriter = FileWriter(fn_log)
-                self._stdout_stream = StdErrStream([filewriter])
-
-    def stop(self):
-        print("BaseTracker stopping...", end=' ')
-        if self._stdout_stream:
-            self._stdout_stream.close()
-        if self._stderr_stream:
-            self._stderr_stream.close()
-        self.dump_params()
-        self.dump_properties()
-        self.dump_tags()
-        self.dump_metrics()
-        print("Ok")
+        if self.exp_id is not None:
+            path = self.root_path / self.exp_id
+            assert not path.exists(), 'Suggested directorty {path} exists.'
+            self.path = path
+        else:
+            self.path = self.get_next_path()
 
     def get_next_path(self):
         """
@@ -134,8 +116,34 @@ class SimpleTracker(BaseTracker):
         templ = self.exp_id_template
         if self.debug:
             templ = self.exp_id_template_debug
-        expid = templ.format(AUTO=i)
+        expid = templ.format(i=i)
         return self.root_path / expid
+
+    def intercept_std(self):
+        self._stdout_stream = None
+        self._stderr_stream = None
+
+        if not is_notebook():
+            if self.log_stdout:
+                fn_log = self.path / 'stdout.txt'
+                filewriter = FileWriter(fn_log)
+                self._stdout_stream = StdOutStream([filewriter])
+            if self.log_stderr:
+                fn_log = self.path / 'stderr.txt'
+                filewriter = FileWriter(fn_log)
+                self._stdout_stream = StdErrStream([filewriter])
+
+    def stop(self):
+        print("BaseTracker stopping...", end=' ')
+        if self._stdout_stream:
+            self._stdout_stream.close()
+        if self._stderr_stream:
+            self._stderr_stream.close()
+        self.dump_params()
+        self.dump_properties()
+        self.dump_tags()
+        self.dump_metrics()
+        print("Ok.")
 
     def makedir(self, exist_ok=False):
         os.makedirs(self.path, exist_ok=exist_ok)
@@ -150,14 +158,20 @@ class SimpleTracker(BaseTracker):
         dump(list(self.tags), self.path / 'tags.yaml')
 
     def dump_metrics(self):
-        # if self.log_metrics:
         dump(self._metrics, self.path / 'metrics.json')
-
         try:
             df = self.metrics_to_df()
             df.to_csv(self.path / 'metrics.csv', index=False)
         except Exception as e:
             warnings.warn(f"Can't convert and save metrics to DataFrame. {e}")
+
+    def dump_texts(self):
+        dump(self._texts, self.path / 'texts.json')
+        try:
+            df = self.texts_to_df()
+            df.to_csv(self.path / 'texts.csv', index=False)
+        except Exception as e:
+            warnings.warn(f"Can't convert and save texts to DataFrame. {e}")
 
     def log_artifact(self, artifact_filename, destination=None, local_only=False):
         # experiment.log_artifact('images/wrong_prediction_1.png')
@@ -212,39 +226,66 @@ class SimpleTracker(BaseTracker):
         self.tags = self.tags | set(tags_list)
         self.dump_tags()
 
-    def log_metric(self, name, x, y=None):
+    def log_metric(self, name, value, index=None, timestamp=None, autoincrement_index=True):
+        """
+        if index is None, then
+            1) auto incremented
+            2) overwritten by index 0.
+        """
         if self.verbose:
-            print('BaseTracker: send_metric: ', name, x, y)
+            print('SimpleTracker: send_metric: ', name, value, index, timestamp, autoincrement_index)
+        try:
+            assert is_float_convertable(value)
+            value = float(value)
+            self._log_to_storage(self._metrics, name, value, index, timestamp, autoincrement_index)
+            self.dump_metrics()
 
-        # if self.log_metrics:
-        if True:
-            try:
-                if name not in self._metrics:
-                    self._metrics[name] = []
-                d = self._metrics[name]
-                if y is None:
-                    y = x
-                    x = -1
-                x = int(x)
-                d.append({'x': x, 'y': y})
+        except Exception as e:
+            warnings.warn(f"Can't log metric '{name}': {e}")
 
-                self.dump_metrics()
+    def log_text(self, name, value, index=None, timestamp=None, autoincrement_index=True):
+        try:
+            assert is_str(value)
+            self._log_to_storage(self._texts, name, value, index, timestamp, autoincrement_index)
+            self.dump_texts()
+        except Exception as e:
+            warnings.warn(f"Can't log text '{name}': {e}")
 
-            except Exception as e:
-                warnings.warn(f"Can't log metric '{name}': {e}")
+    def _log_to_storage(self, storage, name, value, index=None, timestamp=None, autoincrement_index=True):
+        """
+        Simple storage as dictionary (by name) of lists (indexed) of dictionary (index, value, timestamp)
+        """
+        # Create channel with name if it is not exists
+        if name not in storage:
+            storage[name] = []
+        channel = storage[name]
+
+        if index is None:
+            index = len(channel)
+
+        assert is_int(index)
+        index = int(index)
+        assert (index == len(channel)), f'Index {index} must be equal to {len(channel)}'
+
+        if timestamp is None:
+            timestamp = time.time()
+
+        channel.append({'index': index, 'value': value, 'timestamp': timestamp})
 
     def metrics_to_df(self):
-        # if not self.log_metrics:
-        #     return
-        metrics = self._metrics
-        # epochs/batch dict
+        return self._dict_to_df(self._metrics)
+
+    def texts_to_df(self):
+        return self._dict_to_df(self._texts)
+
+    def _dict_to_df(self, items):
         x = {}
-        for name in metrics.keys():
-            for d in metrics[name]:
-                i = d['x']
+        for name in items.keys():
+            for d in items[name]:
+                i = d['index']
                 if i not in x:
-                    x[i] = {'i': i}
-                x[i][name] = d['y']
+                    x[i] = {'index': i}
+                x[i][name] = d['value']
         df = pd.DataFrame([row for i, row in x.items()])
         return df
 
