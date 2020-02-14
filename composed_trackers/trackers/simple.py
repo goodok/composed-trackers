@@ -3,11 +3,7 @@ import os
 import pandas as pd
 import warnings
 import time
-from shutil import copyfile   # https://stackoverflow.com/questions/123198/how-do-i-copy-a-file-in-python
-
-# https://docs.neptune.ml/neptune-client/docs/experiment.html
-# https://pytorch.org/docs/stable/tensorboard.html
-
+from shutil import copyfile
 
 from mmcv.fileio.io import dump
 
