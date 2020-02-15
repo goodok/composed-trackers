@@ -16,13 +16,13 @@ TRACKERS.register_module(NeptuneTracker)
 
 
 class ComposedTrackers(BaseTracker):
-    def __init__(self, name='name', description='Composed trackers', tags=[], params={}, debug=False, initialize_fn=None, **cfg):
+    def __init__(self, name='name', description='Composed trackers', tags=[], params={}, offline=False, initialize_fn=None, **cfg):
         self.name = name
         self.description = description
         self.tags = tags
         self.params = dict(params)
 
-        self.debug = debug
+        self.offline = offline
 
         self.cfg = cfg
 
@@ -45,7 +45,7 @@ class ComposedTrackers(BaseTracker):
         """
         self.trackers = []
 
-        default_keys = ['name', 'description', 'tags', 'params', 'debug']
+        default_keys = ['name', 'description', 'tags', 'params', 'offline']
         default_args = dict([(key, getattr(self, key)) for key in default_keys])
         suggested_id = None
 
@@ -69,7 +69,7 @@ class ComposedTrackers(BaseTracker):
     def describe(self, ids_only=False):
         if not ids_only:
             print('ComposedTrackers description:')
-            keys = ['name', 'description', 'tags', 'debug']
+            keys = ['name', 'description', 'tags', 'offline']
             for key in keys:
                 print(f'  {key:12}:', getattr(self, key, None))
 
@@ -114,6 +114,21 @@ class ComposedTrackers(BaseTracker):
                 warnings.warn(f"Can't .log_metric for tracker {tracker}. {e}", UserWarning)
                 print(e)
                 traceback.print_exc()
+
+    def log_metrics(self, metrics, index=None, timestamp=None, autoincrement_index=True):
+        """Log metrics (numeric values)"""
+
+        try:
+            for key, val in metrics.items():
+                if is_tensor(val):
+                    val = val.cpu().detach()
+                self.log_metric(key, val, index, timestamp=timestamp, autoincrement_index=autoincrement_index)
+
+        except Exception as e:
+            warnings.warn(f"Can't .log_metric for tracker {tracker}. {e}", UserWarning)
+            print(e)
+            traceback.print_exc()
+
 
     def log_text(self, name, value, index=None, timestamp=None, autoincrement_index=True):
         if index is None:
@@ -160,7 +175,9 @@ class ComposedTrackers(BaseTracker):
                 return path
 
     # aliases
-    save_and_log_artifact = log_text_as_artifact
+    def save_and_log_artifact(self, text, destination=None, existed_temp_file=None):
+        warnings.warn('Use log_text_as_artifact instead of save_and_log_artifact', DeprecationWarning)
+        self.log_text_as_artifact(self, text, destination, existed_temp_file)
 
 
 TRACKERS.register_module(ComposedTrackers)

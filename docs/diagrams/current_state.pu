@@ -46,7 +46,7 @@ package "ML Trainers" as ML_Trainers <<Cloud>> {
     }
 
 
-    package pytorch_lighning {
+    package pytorch_lightning {
 
         package "loggers" {
 

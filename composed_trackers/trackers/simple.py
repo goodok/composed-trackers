@@ -3,11 +3,8 @@ import os
 import pandas as pd
 import warnings
 import time
-from shutil import copyfile   # https://stackoverflow.com/questions/123198/how-do-i-copy-a-file-in-python
-
-# https://docs.neptune.ml/neptune-client/docs/experiment.html
-# https://pytorch.org/docs/stable/tensorboard.html
-
+from shutil import copyfile
+import traceback
 
 from mmcv.fileio.io import dump
 
@@ -18,11 +15,11 @@ from .base import BaseTracker
 
 
 class SimpleTracker(BaseTracker):
-    def __init__(self, name='name', description='Base tracker', tags=[], debug=False,
+    def __init__(self, name='name', description='Base tracker', tags=[], offline=False,
                  root_path='./logbook',
                  exp_id=None,
                  exp_id_template='LOG-{i}',
-                 exp_id_template_debug=None,
+                 exp_id_template_offline=None,
                  verbose=0,
                  params={},             # Parameters of the experiment. After experiment creation params are read-only
                  properties={},         # Properties of the experiment. They are editable after experiment is created.
@@ -37,11 +34,11 @@ class SimpleTracker(BaseTracker):
         self.exp_id = exp_id
         self.exp_id_template = exp_id_template
 
-        self.exp_id_template_debug = exp_id_template_debug
-        if self.exp_id_template_debug is None:
-            self.exp_id_template_debug = self.exp_id_template
+        self.exp_id_template_offline = exp_id_template_offline
+        if self.exp_id_template_offline is None:
+            self.exp_id_template_offline = self.exp_id_template
 
-        self.debug = debug
+        self.offline = offline
         self.verbose = verbose
         self.params = params
         self.properties = properties
@@ -114,8 +111,8 @@ class SimpleTracker(BaseTracker):
 
     def get_i_path(self, i):
         templ = self.exp_id_template
-        if self.debug:
-            templ = self.exp_id_template_debug
+        if self.offline:
+            templ = self.exp_id_template_offline
         expid = templ.format(i=i)
         return self.root_path / expid
 
@@ -242,6 +239,9 @@ class SimpleTracker(BaseTracker):
 
         except Exception as e:
             warnings.warn(f"Can't log metric '{name}': {e}")
+            print(e)
+            traceback.print_exc()
+
 
     def log_text(self, name, value, index=None, timestamp=None, autoincrement_index=True):
         try:

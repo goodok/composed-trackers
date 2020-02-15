@@ -17,7 +17,7 @@
 # 
 # Run with additional params:
 #     
-#     python example_02.py example_02.yaml --tracker.debug=True
+#     python example_02.py example_02.yaml --tracker.offline=True
 #     
 # 
 
@@ -38,7 +38,7 @@ from pathlib import Path
 notebook_config = Path('example_02.yaml')
 
 notebook_shell_args = {
-    'tracker.debug': True}
+    'tracker.offline': True}
 
 
 # In[3]:

@@ -10,7 +10,7 @@ from .base import BaseTracker
 
 class NeptuneTracker(BaseTracker):
 
-    def __init__(self, name='name', description='Trackers', tags=[], debug=False,
+    def __init__(self, name='name', description='Trackers', tags=[], offline=False,
                  params={},
                  properties={},
                  project=None,
@@ -23,7 +23,7 @@ class NeptuneTracker(BaseTracker):
         self.name = name
         self.description = description
         self.tags = set(tags)
-        self.debug = debug
+        self.offline = offline
         self.params = params
         self.properties = properties
 
@@ -52,7 +52,7 @@ class NeptuneTracker(BaseTracker):
                 token = f.readline().splitlines()[0]
                 os.environ['NEPTUNE_API_TOKEN'] = token
 
-        if self.debug:
+        if self.offline:
             neptune.init(project_qualified_name='dry-run/project',
                          backend=neptune.OfflineBackend())
         else:
@@ -62,6 +62,7 @@ class NeptuneTracker(BaseTracker):
                                                           params=self.params,
                                                           properties=self.properties,
                                                           tags=tuple(self.tags),
+                                                          description=self.description,
                                                           # upload_source_files=self.upload_source_files,
                                                           **self._kwargs)
         exp_id = self.internal_handler.id
