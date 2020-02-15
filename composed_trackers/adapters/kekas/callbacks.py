@@ -15,8 +15,8 @@ class MetricsMonitor(Callback):
     "A `Callback` that send history of metrics to `neptune`."
 
 
-    def __init__(self, logger, simulation=False): 
-        self.logger = logger
+    def __init__(self, tracker, simulation=False): 
+        self.tracker = tracker
         self.total_iter = 0
         self.train_iter = 0
         self.val_iter = 0
@@ -25,7 +25,7 @@ class MetricsMonitor(Callback):
         self.train_metrics = defaultdict(list)
         self.val_metrics = defaultdict(list)
 
-        self.epochs_total = 1
+        self.epochs_total = 0
         self.simulation = simulation
 
     def update_total_iter(self, mode: str) -> None:
@@ -78,37 +78,38 @@ class MetricsMonitor(Callback):
             # cacl mean by batch
             for name, metric in self.train_metrics.items():
                 mean = np.mean(metric[-self.train_batch_iter:])
-                self.send_metric(name, self.epochs_total, mean)
+                self.send_metric(name + "_mean", mean, self.epochs_total)
 
             # other metrics
             for mode, metrics in state.core.epoch_metrics.items():
                 for name, metric in metrics.items():
                     if name != 'loss':
-                        self.send_metric(mode + "_" + name, self.epochs_total, metric)
+                        self.send_metric(mode + "_" + name, metric, self.epochs_total)
 
-            self.send_metric('epoch_time_train', self.epochs_total, time.time() - self.train_t0)
+            self.send_metric('epoch_time_train', time.time() - self.train_t0, self.epochs_total)
 
         if state.core.mode == "val":
             # cacl mean by batch
             for name, metric in self.val_metrics.items():
                 mean = np.mean(metric[-self.val_batch_iter:])  # last epochs vals
-                self.send_metric("val_" + name, self.epochs_total, mean)
+                self.send_metric("val_" + name + "_mean", mean, self.epochs_total)
 
             # other metrics
             for mode, metrics in state.core.epoch_metrics.items():
                 for name, metric in metrics.items():
                     if name != 'loss':
-                        self.send_metric(mode + "_" + name, self.epochs_total, metric)
+                        self.send_metric(mode + "_" + name, metric, self.epochs_total)
 
             lr = get_opt_lr(state.core.opt)
-            self.send_metric("LR", self.epochs_total, lr)
+            self.send_metric("LR", lr, self.epochs_total)
 
-            self.send_metric('epoch_time_valid', self.epochs_total, time.time() - self.val_t0)
+            self.send_metric('epoch_time_valid', time.time() - self.val_t0, self.epochs_total)
 
             self.epochs_total +=1
 
-    def send_metric(self, name, x, y):
-        if not self.simulation and (self.logger is not None):
-            self.logger.send_metric(name, x, y)
+    #def send_metric(self, name, x, y):
+    def send_metric(self, name, value, index=None):
+        if not self.simulation and (self.tracker is not None):
+            self.tracker.log_metric(name, value, index)
         else:
-            print('\n', name, x, y)
+            print('\n', name, value, index)

@@ -4,6 +4,7 @@ import pandas as pd
 import warnings
 import time
 from shutil import copyfile
+import traceback
 
 from mmcv.fileio.io import dump
 
@@ -238,6 +239,9 @@ class SimpleTracker(BaseTracker):
 
         except Exception as e:
             warnings.warn(f"Can't log metric '{name}': {e}")
+            print(e)
+            traceback.print_exc()
+
 
     def log_text(self, name, value, index=None, timestamp=None, autoincrement_index=True):
         try:
