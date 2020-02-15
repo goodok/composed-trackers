@@ -5,7 +5,7 @@ tracker:
     name: 'Experiment  00 name'
     description: 'Example of using configuration file.'
     tags: ['examples', 'config']
-    debug: True
+    offline: True
     SimpleTracker:
         root_path: './logs'
         exp_id_template: 'EXAM00-{i:03}'

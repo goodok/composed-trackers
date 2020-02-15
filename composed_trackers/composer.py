@@ -16,13 +16,13 @@ TRACKERS.register_module(NeptuneTracker)
 
 
 class ComposedTrackers(BaseTracker):
-    def __init__(self, name='name', description='Composed trackers', tags=[], params={}, debug=False, initialize_fn=None, **cfg):
+    def __init__(self, name='name', description='Composed trackers', tags=[], params={}, offline=False, initialize_fn=None, **cfg):
         self.name = name
         self.description = description
         self.tags = tags
         self.params = dict(params)
 
-        self.debug = debug
+        self.offline = offline
 
         self.cfg = cfg
 
@@ -45,7 +45,7 @@ class ComposedTrackers(BaseTracker):
         """
         self.trackers = []
 
-        default_keys = ['name', 'description', 'tags', 'params', 'debug']
+        default_keys = ['name', 'description', 'tags', 'params', 'offline']
         default_args = dict([(key, getattr(self, key)) for key in default_keys])
         suggested_id = None
 
@@ -69,7 +69,7 @@ class ComposedTrackers(BaseTracker):
     def describe(self, ids_only=False):
         if not ids_only:
             print('ComposedTrackers description:')
-            keys = ['name', 'description', 'tags', 'debug']
+            keys = ['name', 'description', 'tags', 'offline']
             for key in keys:
                 print(f'  {key:12}:', getattr(self, key, None))
 

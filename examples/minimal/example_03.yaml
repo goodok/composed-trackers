@@ -2,13 +2,13 @@
 tracker:
     type: ComposedTrackers
     trackers: [NeptuneTracker, SimpleTracker]
-    name: 'Experiment  02 name'
+    name: 'Experiment  03 name'
     description: 'Example of using configuration file.'
     tags: ['examples', 'config']
-    debug: False
+    offline: False
     SimpleTracker:
         root_path: './logs'
-        exp_id_template: 'EXAM02-{i:03}'
+        exp_id_template: 'EXAM03-{i:03}'
     NeptuneTracker:
         project: 'goodok/composed'
 
