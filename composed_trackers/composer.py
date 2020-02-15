@@ -115,6 +115,21 @@ class ComposedTrackers(BaseTracker):
                 print(e)
                 traceback.print_exc()
 
+    def log_metrics(self, metrics, index=None, timestamp=None, autoincrement_index=True):
+        """Log metrics (numeric values)"""
+
+        try:
+            for key, val in metrics.items():
+                if is_tensor(val):
+                    val = val.cpu().detach()
+                self.log_metric(key, val, index, timestamp=timestamp, autoincrement_index=autoincrement_index)
+
+        except Exception as e:
+            warnings.warn(f"Can't .log_metric for tracker {tracker}. {e}", UserWarning)
+            print(e)
+            traceback.print_exc()
+
+
     def log_text(self, name, value, index=None, timestamp=None, autoincrement_index=True):
         if index is None:
             assert autoincrement_index is True, 'Only autoincrement of index is possible for some loggers.'
@@ -160,7 +175,9 @@ class ComposedTrackers(BaseTracker):
                 return path
 
     # aliases
-    save_and_log_artifact = log_text_as_artifact
+    def save_and_log_artifact(self, text, destination=None, existed_temp_file=None):
+        warnings.warn('Use log_text_as_artifact instead of save_and_log_artifact', DeprecationWarning)
+        self.log_text_as_artifact(self, text, destination, existed_temp_file)
 
 
 TRACKERS.register_module(ComposedTrackers)

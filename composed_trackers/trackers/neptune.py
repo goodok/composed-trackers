@@ -62,6 +62,7 @@ class NeptuneTracker(BaseTracker):
                                                           params=self.params,
                                                           properties=self.properties,
                                                           tags=tuple(self.tags),
+                                                          description=self.description,
                                                           # upload_source_files=self.upload_source_files,
                                                           **self._kwargs)
         exp_id = self.internal_handler.id
