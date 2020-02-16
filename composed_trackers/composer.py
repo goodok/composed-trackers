@@ -2,6 +2,8 @@ import os
 import warnings
 import tempfile
 import traceback
+from torch import is_tensor
+
 
 from .utils.registry import Registry, build_from_cfg
 from .trackers.simple import SimpleTracker
@@ -125,10 +127,9 @@ class ComposedTrackers(BaseTracker):
                 self.log_metric(key, val, index, timestamp=timestamp, autoincrement_index=autoincrement_index)
 
         except Exception as e:
-            warnings.warn(f"Can't .log_metric for tracker {tracker}. {e}", UserWarning)
+            warnings.warn(f"Can't .log_metrics for tracker. {e}", UserWarning)
             print(e)
             traceback.print_exc()
-
 
     def log_text(self, name, value, index=None, timestamp=None, autoincrement_index=True):
         if index is None:

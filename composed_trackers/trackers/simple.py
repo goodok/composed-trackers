@@ -242,7 +242,6 @@ class SimpleTracker(BaseTracker):
             print(e)
             traceback.print_exc()
 
-
     def log_text(self, name, value, index=None, timestamp=None, autoincrement_index=True):
         try:
             assert is_str(value)
