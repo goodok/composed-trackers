@@ -10,7 +10,7 @@ tracker:
         root_path: './logs'
         exp_id_template: 'EXAM02-{i:03}'
     NeptuneTracker:
-        project: 'goodok/composed'
+        project: 'USER_NAME/PROJECT_NAME'
 
 seed: 777
 

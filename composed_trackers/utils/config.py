@@ -297,7 +297,7 @@ def get_shell_args(parser):
     return shell_args
 
 
-def load_config_with_shell_updates(fn_config, notebook_shell_args={}, script_description=None, verbose=False, sep='.'):
+def load_config_with_shell_updates(fn_config=None, notebook_shell_args={}, script_description=None, verbose=False, sep='.'):
     if is_notebook():
         shell_args = notebook_shell_args
         cfg = Config.fromfile(fn_config)

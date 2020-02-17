@@ -1,20 +1,24 @@
-
 tracker:
     type: ComposedTrackers
     trackers: [NeptuneTracker, SimpleTracker]
-    name: 'Experiment  00 name'
-    description: 'Example of using configuration file.'
-    tags: ['examples', 'config']
+    name: 'Kekas Imagenet dogs'
+    description: 'Example Kekas Imagenet dogs'
+    tags: ['examples', 'kekas']
     offline: True
     SimpleTracker:
         root_path: './logs'
         exp_id_template: 'EXAM00-{i:03}'
     NeptuneTracker:
-        project: 'goodok/composed'
+        project: 'USER_NAME/PROJECT_NAME'
 
 seed: 777
 
 optimizer:
-  type: torch.optim.Adam
-  weight_decay: 0.0001
-  lr: 0.6
+  weight_decay: 0.00001
+  lr: 0.001
+  
+trainer:
+    epochs: 4
+
+  
+
