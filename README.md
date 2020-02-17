@@ -57,7 +57,7 @@ tracker.describe(ids_only=True)
 
 ## Examples
 
-[QuickStart]()
+[QuickStart](https://github.com/goodok/composed-trackers/tree/master/examples/minimal)
 
-[Kekas]()
+[Kekas](https://github.com/goodok/composed-trackers/tree/master/examples/kekas)
 
