@@ -1,41 +1,36 @@
-from pathlib import Path
 import os
-import pandas as pd
 import warnings
 import tempfile
 import traceback
-from shutil import copyfile   # https://stackoverflow.com/questions/123198/how-do-i-copy-a-file-in-python
-
-# https://docs.neptune.ml/neptune-client/docs/experiment.html
-# https://pytorch.org/docs/stable/tensorboard.html
+from torch import is_tensor
 
 
-from mmcv.fileio.io import dump
-from mmdet.utils.registry import Registry, build_from_cfg
-
-from .loggers.simple import SimpleLogger
-from .loggers.neptune import NeptuneLogger
-from .loggers.base import BaseLogger
+from .utils.registry import Registry, build_from_cfg
+from .trackers.simple import SimpleTracker
+from .trackers.neptune import NeptuneTracker
+from .trackers.base import BaseTracker
 
 from .utils.log import print_color
 
-LOGGERS = Registry('logger')
-LOGGERS.register_module(SimpleLogger)
-LOGGERS.register_module(NeptuneLogger)
+TRACKERS = Registry('Trackers')
+TRACKERS.register_module(SimpleTracker)
+TRACKERS.register_module(NeptuneTracker)
 
 
-class ComposedLoggers(BaseLogger):
-    def __init__(self, name='name', description='Loggers', tags=[], params={}, debug=False, initialize_fn=None, **cfg):
+class ComposedTrackers(BaseTracker):
+    def __init__(self, name='name', description='Composed trackers', tags=[], params={}, offline=False, initialize_fn=None, **cfg):
         self.name = name
         self.description = description
         self.tags = tags
-        self.params = params
-        
-        self.debug = debug
-        
+        self.params = dict(params)
+
+        self.offline = offline
+
         self.cfg = cfg
-        
+
         self._initialize_fn = initialize_fn
+
+        self.initialize()
 
     def initialize(self):
         self.initialize_fn()
@@ -50,109 +45,140 @@ class ComposedLoggers(BaseLogger):
         """
         Default initialize function.
         """
-        self.loggers = []
-        
-        default_keys = ['name', 'description', 'tags', 'params', 'debug']
+        self.trackers = []
+
+        default_keys = ['name', 'description', 'tags', 'params', 'offline']
         default_args = dict([(key, getattr(self, key)) for key in default_keys])
-        
         suggested_id = None
 
-        for logger_name in self.cfg['loggers']:
-            
+        for tracker_name in self.cfg['trackers']:
+            if isinstance(tracker_name, BaseTracker):
+                tracker = tracker_name
+            else:
                 cfg = default_args.copy()
-                cfg['type'] = logger_name
+                cfg['type'] = tracker_name
                 if suggested_id is not None:
                     cfg['exp_id'] = suggested_id
-                cfg.update(self.cfg[logger_name])
-                
-                logger = build_from_cfg(cfg, LOGGERS)
-                logger.initialize()
-                if suggested_id is None:
-                    suggested_id = logger.exp_id
+                cfg.update(self.cfg[tracker_name])
 
-                self.loggers.append(logger)
-        pass
+                tracker = build_from_cfg(cfg, TRACKERS)
+
+            if suggested_id is None:
+                suggested_id = tracker.exp_id
+
+            self.trackers.append(tracker)
 
     def describe(self, ids_only=False):
         if not ids_only:
-            keys = ['name', 'description', 'tags', 'debug']
+            print('ComposedTrackers description:')
+            keys = ['name', 'description', 'tags', 'offline']
             for key in keys:
                 print(f'  {key:12}:', getattr(self, key, None))
-        
-            print('  loggers:', self.cfg['loggers'])
-            for logger in self.loggers:
+
+            for tracker in self.trackers:
                 print()
-                logger.describe()
+                tracker.describe()
         else:
-            for logger in self.loggers:
-                print(f'{logger.__class__.__name__:15}:', end=' ')
-                print_color(f'{logger.exp_id}', 'green')
+            for tracker in self.trackers:
+                print(f'{tracker.__class__.__name__:15}:', end=' ')
+                print_color(f'{tracker.exp_id}', 'green')
+        print()
 
     def stop(self):
-        for logger in self.loggers:
+        for tracker in self.trackers:
             try:
-                logger.stop()
-            except:
-                warnings.warn(f"Can't .stop for logger {logger}. {e}", UserWarning)
-    
-    def set_property(self, key, value):
-        for logger in self.loggers:
-            try:
-                logger.set_property(key, value)
+                tracker.stop()
             except Exception as e:
-                warnings.warn(f"Can't .set_property for logger {logger}. {e}", UserWarning)
-    
-    def append_tag(self, tag, *tags):
-        for logger in self.loggers:
-            try:
-                logger.append_tag(tag, *tags)
-            except Exception as e:
-                warnings.warn(f"Can't .append_tag for logger {logger}. {e}", UserWarning)
+                warnings.warn(f"Can't .stop for tracker {tracker}. {e}", UserWarning)
 
-    
-    def log_metric(self, name, x, y=None):
-        for logger in self.loggers:
+    def set_property(self, key, value):
+        for tracker in self.trackers:
             try:
-                logger.log_metric(name, x, y)
+                tracker.set_property(key, value)
             except Exception as e:
-                warnings.warn(f"Can't .log_metric for logger {logger}. {e}", UserWarning)
+                warnings.warn(f"Can't .set_property for tracker {tracker}. {e}", UserWarning)
+
+    def append_tag(self, tag, *tags):
+        for tracker in self.trackers:
+            try:
+                tracker.append_tag(tag, *tags)
+            except Exception as e:
+                warnings.warn(f"Can't .append_tag for tracker {tracker}. {e}", UserWarning)
+
+    def log_metric(self, name, value, index=None, timestamp=None, autoincrement_index=True):
+        if index is None:
+            assert autoincrement_index is True, 'Only autoincrement of index is possible for some loggers.'
+
+        for tracker in self.trackers:
+            try:
+                tracker.log_metric(name, value, index, timestamp, autoincrement_index)
+            except Exception as e:
+                warnings.warn(f"Can't .log_metric for tracker {tracker}. {e}", UserWarning)
                 print(e)
                 traceback.print_exc()
 
-    
-    def log_artifact(self, filename, destination=None):
-        for logger in self.loggers:
+    def log_metrics(self, metrics, index=None, timestamp=None, autoincrement_index=True):
+        """Log metrics (numeric values)"""
+
+        try:
+            for key, val in metrics.items():
+                if is_tensor(val):
+                    val = val.cpu().detach()
+                self.log_metric(key, val, index, timestamp=timestamp, autoincrement_index=autoincrement_index)
+
+        except Exception as e:
+            warnings.warn(f"Can't .log_metrics for tracker. {e}", UserWarning)
+            print(e)
+            traceback.print_exc()
+
+    def log_text(self, name, value, index=None, timestamp=None, autoincrement_index=True):
+        if index is None:
+            assert autoincrement_index is True, 'Only autoincrement of index is possible for some loggers.'
+        for tracker in self.trackers:
             try:
-                logger.log_artifact(filename, destination)
+                tracker.log_text(name, value, index, timestamp, autoincrement_index)
             except Exception as e:
-                warnings.warn(f"Can't .log_artifact for logger {logger} {e}", UserWarning)
-    
+                warnings.warn(f"Can't .log_text for tracker {tracker}. {e}", UserWarning)
+                print(e)
+                traceback.print_exc()
+
+    def log_artifact(self, filename, destination=None):
+        for tracker in self.trackers:
+            try:
+                tracker.log_artifact(filename, destination)
+            except Exception as e:
+                warnings.warn(f"Can't .log_artifact for tracker {tracker} {e}", UserWarning)
+
     def log_text_as_artifact(self, text, destination=None, existed_temp_file=None):
         fd = None
         try:
             fd, path = tempfile.mkstemp()
-            
+
             with os.fdopen(fd, 'w') as tmp:
                 tmp.write(text)
-            
-            for logger in self.loggers:
+
+            for tracker in self.trackers:
                 try:
-                    logger.log_artifact(path, destination)
+                    tracker.log_artifact(path, destination)
                 except Exception as e:
-                    warnings.warn(f"Can't .log_artifact for logger {logger}. {e}", UserWarning)
+                    warnings.warn(f"Can't .log_artifact for tracker {tracker}. {e}", UserWarning)
         except Exception as e:
             warnings.warn(f"Can't .log_text_as_artifact for composer {self} {e}", UserWarning)
         finally:
             if fd is not None:
                 os.remove(path)
-    
+
     @property
     def path(self):
-        for logger in self.loggers:
-            path = getattr(logger, 'path', None)
+        for tracker in self.trackers:
+            path = getattr(tracker, 'path', None)
             if path is not None:
                 return path
-        
-    
+
     # aliases
-    save_and_log_artifact = log_text_as_artifact
+    def save_and_log_artifact(self, text, destination=None, existed_temp_file=None):
+        warnings.warn('Use log_text_as_artifact instead of save_and_log_artifact', DeprecationWarning)
+        self.log_text_as_artifact(self, text, destination, existed_temp_file)
+
+
+TRACKERS.register_module(ComposedTrackers)

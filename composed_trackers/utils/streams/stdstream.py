@@ -20,14 +20,13 @@
 import sys
 from pathlib import Path
 
-#from neptune.internal.channels.channels import ChannelNamespace
-#from neptune.internal.streams.channel_writer import ChannelWriter
+# from neptune.internal.channels.channels import ChannelNamespace
+# from neptune.internal.streams.channel_writer import ChannelWriter
 
 
 class FileWriter(object):
     def __init__(self, path):
         self.path = Path(path)
-        
         self.f = open(str(self.path), 'w')
 
     def write(self, v):
@@ -48,12 +47,11 @@ class StdStream(object):
     def write(self, data):
         self._stream.write(data)
         for w in self._writers:
-            #try:
+            try:
                 w.write(data)
-                # assert 1 == 2, data
             # pylint:disable=bare-except
-            #except:
-            #    pass
+            except:
+                pass
 
     def isatty(self):
         # Check if the file is connected to a terminal device:
@@ -87,7 +85,6 @@ class StdStream(object):
                 pass
 
 
-
 class StdOutStream(StdStream):
     """
     Example
@@ -97,18 +94,16 @@ class StdOutStream(StdStream):
             filewriter = FileWriter(fn_log)
 
             stdout_writer = StdOutStream([filewriter])
-    
-    
         # some code
         # ....
-    
+
         if not is_notebook():
             stdout_writer.close()
     """
     def __init__(self, writers):
         self._old_stream = sys.stdout
         super().__init__(sys.__stdout__, writers)
-        #super().__init__(sys.stdout, writers)
+        # super().__init__(sys.stdout, writers)
         sys.stdout = self
 
     def close(self):
@@ -125,73 +120,3 @@ class StdErrStream(StdStream):
     def close(self):
         super().close()
         sys.stderr = self._old_stream
-
-
-#### OLD
-# https://github.com/neptune-ml/neptune-client/blob/master/neptune/internal/streams/stdstream_uploader.py
-
-class StdStreamWithUpload(object):
-
-    def __init__(self, channel_name, stream, filewriter):
-        # pylint:disable=protected-access
-        #self._channel = experiment._get_channel(channel_name, 'text', ChannelNamespace.SYSTEM)
-        #self._channel_writer = ChannelWriter(experiment, channel_name, ChannelNamespace.SYSTEM)
-        self._stream = stream
-        self._filewriter = filewriter
-
-    def write(self, data):
-        self._stream.write(data)
-        try:
-            self._filewriter.write(data)
-        # pylint:disable=bare-except
-        except:
-            pass
-
-    def isatty(self):
-        return hasattr(self._stream, 'isatty') and self._stream.isatty()
-
-    def flush(self):
-        self._stream.flush()
-        try:
-            self._filewriter.flush()
-        # pylint:disable=bare-except
-        except:
-            pass
-        
-
-    def fileno(self):
-        return self._stream.fileno()
-
-    def close(self):
-        self.flush()
-        try:
-            self._filewriter.close()
-        # pylint:disable=bare-except
-        except:
-            pass
-
-class StdOutWithUpload(StdStreamWithUpload):
-
-    def __init__(self, filename):
-        filewriter = FileWriter(filename)
-        super(StdOutWithUpload, self).__init__('stdout', sys.__stdout__, filewriter)
-        self.old_stdout = sys.stdout
-        sys.stdout = self
-
-    def close(self):
-        super(StdOutWithUpload, self).close()
-        sys.stdout = self.old_stdout   # if is_notebook()
-        #sys.stdout = sys.__stdout__
-        
-
-
-class StdErrWithUpload(StdStreamWithUpload):
-
-    def __init__(self, filename):
-        filewriter = FileWriter(filename)
-        super(StdErrWithUpload, self).__init__(experiment, 'stderr', sys.__stderr__, filewriter)
-        sys.stderr = self
-
-    def close(self):
-        super(StdErrWithUpload, self).close()
-        sys.stderr = sys.__stderr__

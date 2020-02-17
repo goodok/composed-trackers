@@ -1,0 +1,197 @@
+` http://plantuml.com/en/class-diagram
+
+@startuml
+
+page 2x2
+
+skinparam handwritten false
+
+
+'!define COMMENT(x) <color:grey>x</color>
+!function COMMENT(x)
+  <color:grey>x</color>
+!endfunction
+
+
+left to right direction
+'top to bottom direction  'default
+
+package "ML Trainers" as ML_Trainers <<Cloud>> {
+
+
+    package "keras" {
+        package "callbacks" {
+            class BaseLogger {
+                + on_epoch_begin()
+                + on_batch_end()
+                + on_epoch_end()
+            }
+            hide BaseLogger circle
+
+            class ProgbarLogger {
+            }
+            hide ProgbarLogger circle
+
+            class CSVLogger {
+            }
+            hide CSVLogger circle
+
+            class "TensorBoard" as keras_TensorBoard {
+            }
+            hide keras_TensorBoard circle
+
+            ProgbarLogger -|> BaseLogger
+            CSVLogger -|> BaseLogger
+        }
+    }
+
+
+    package pytorch_lightning {
+
+        package "loggers" {
+
+            abstract class LightningLoggerBase {
+            + {abstract} experiment {readOnly}
+            + {abstract} log_metrics (metrics, step)
+            + {abstract} log_hyperparams (params)
+            + init()
+            save()
+            finalize()
+            close()
+            + rank
+            + {abstract} name {readOnly}
+            + {abstract} version {readOnly}
+            }
+
+            class "test_tube" as pl_test_tube {
+                + experiment {readOnly}
+                + init (save_dir, name, description,
+                      debug, version, create_git_tag)
+                + log_metrics (metrics, step)
+                + log_hyperparams (params)
+                ~ __get_state__ ()
+                ~ __set_state__ ()
+            }
+            hide pl_test_tube circle
+
+
+            class "neptune" as pl_neptune {
+                + experiment {readOnly}
+                + rank
+                + name {readOnly}
+                + version {readOnly}
+                ..
+                ~ mode
+                --
+                + init (api_key, project_name, offline_mode,
+                    experiment_name)
+                + log_hyperparams (params)
+                + log_metrics (metrics, step)
+                ..
+                + log_metric (metric_name, metric_value, step=None)
+                + log_image (log_name, image, step=None)
+                + log_artifact (artifact, destination=None)
+                + log_text (log_name, text, step=None))
+                + set_property (key, value)
+                + append_tags (tags)
+            }
+            hide pl_neptune circle
+
+            pl_neptune -|> LightningLoggerBase
+            pl_test_tube -|> LightningLoggerBase
+            
+        }
+    }
+
+    package "pytorch" {
+    }
+}
+
+package "Trackers" <<Cloud>> {
+
+    'header
+    '  Variouse params, methods.
+    '  Even for the same methods,
+    '  arguments are differ
+    'endheader
+
+    package "neptune_client" {
+      class "neptune" {
+        + name : string
+        + init (project_qualified_name: string)
+        + log_metric (1 kind of params)
+      }
+      'hide "neptune" members
+      hide "neptune" circle
+
+    }
+
+  package "MLFlow" {
+      class "MLFlow" {
+        + name : string
+        + project: string
+        + log_metric (2 kind of params)
+      }
+      'hide "MLFlow" members
+      hide "MLFlow" circle
+}
+
+  class "TF.TensorBoard" as TF_TensorBoard {
+    + writer
+    set_model()
+    on_train_begin()
+    on test_begin()
+    on_epoch_begin()
+    on_epoch_end()
+    on_train_batch_begin()
+    on_train_batch_end()
+    ...
+    - _log_metrics(logs, prefix, step)
+    - _log_weights(logs, prefix, step)
+    - _log_weights_as_image(logs, prefix, step)
+    ...()
+  }
+  'hide "TensorBoard" members
+  hide TF_TensorBoard circle
+
+  package "test_tube" {
+      class "test_tube" {
+        name : string
+      }
+      'hide "test_tube" members
+      hide "test_tube" circle
+  }
+
+
+  package torch_tensorboard {
+
+    class SummaryWriter {}
+    class FileWriter {}
+
+    hide SummaryWriter circle
+    hide FileWriter circle
+  }
+
+  test_tube -> torch_tensorboard
+
+}
+
+
+
+
+
+pl_neptune -> neptune
+pl_test_tube -> test_tube
+
+keras_TensorBoard -> TF_TensorBoard
+
+' tune layout 
+package "D" {
+}
+hide D
+
+ML_Trainers -[hidden]- D
+D -[hidden]- Trackers
+
+
+@enduml

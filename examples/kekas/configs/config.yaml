@@ -1,0 +1,24 @@
+tracker:
+    type: ComposedTrackers
+    trackers: [NeptuneTracker, SimpleTracker]
+    name: 'Kekas Imagenet dogs'
+    description: 'Example Kekas Imagenet dogs'
+    tags: ['examples', 'kekas']
+    offline: True
+    SimpleTracker:
+        root_path: './logs'
+        exp_id_template: 'EXAM00-{i:03}'
+    NeptuneTracker:
+        project: 'USER_NAME/PROJECT_NAME'
+
+seed: 777
+
+optimizer:
+  weight_decay: 0.00001
+  lr: 0.001
+  
+trainer:
+    epochs: 4
+
+  
+
