@@ -178,7 +178,7 @@ class ComposedTrackers(BaseTracker):
     # aliases
     def save_and_log_artifact(self, text, destination=None, existed_temp_file=None):
         warnings.warn('Use log_text_as_artifact instead of save_and_log_artifact', DeprecationWarning)
-        self.log_text_as_artifact(self, text, destination, existed_temp_file)
+        self.log_text_as_artifact(text, destination, existed_temp_file)
 
 
 TRACKERS.register_module(ComposedTrackers)
