@@ -1,9 +1,13 @@
 import os
 # import warnings
 
-import neptune
-from neptune.internal.streams.channel_writer import ChannelWriter
-from neptune.internal.channels.channels import ChannelNamespace
+try:
+    import neptune
+    from neptune.internal.streams.channel_writer import ChannelWriter
+    from neptune.internal.channels.channels import ChannelNamespace
+except ImportError:
+    raise ImportError('Missing mlflow package.')
+
 
 from .base import BaseTracker
 

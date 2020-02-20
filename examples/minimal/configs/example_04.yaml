@@ -1,0 +1,21 @@
+
+tracker:
+    type: ComposedTrackers
+    #trackers: [MLFlowTracker, SimpleTracker]
+    trackers: [MLFlowTracker]
+    name: 'Experiment  04 name'
+    description: 'MLFlow example'
+    tags: ['examples', 'config', 'mlflow']
+    offline: False
+    SimpleTracker:
+        root_path: './logs'
+        exp_id_template: 'EXAM04-{i:03}'
+    MLFlowTracker:
+        tracking_uri: 'file:./logs/mlruns'
+
+seed: 777
+
+optimizer:
+  type: torch.optim.Adam
+  weight_decay: 0.0001
+  lr: 0.6

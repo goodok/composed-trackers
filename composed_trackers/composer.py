@@ -7,14 +7,26 @@ from torch import is_tensor
 
 from .utils.registry import Registry, build_from_cfg
 from .trackers.simple import SimpleTracker
-from .trackers.neptune import NeptuneTracker
 from .trackers.base import BaseTracker
 
 from .utils.log import print_color
 
 TRACKERS = Registry('Trackers')
 TRACKERS.register_module(SimpleTracker)
-TRACKERS.register_module(NeptuneTracker)
+
+
+try:
+    from .trackers.neptune import NeptuneTracker
+    TRACKERS.register_module(NeptuneTracker)
+except ImportError:
+    pass
+
+
+try:
+    from .trackers.mlflow import MLFlowTracker
+    TRACKERS.register_module(MLFlowTracker)
+except:
+    pass
 
 
 class ComposedTrackers(BaseTracker):
