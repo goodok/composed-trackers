@@ -1,0 +1,5 @@
+mnist/
+mnist
+lightning_logs/
+default/
+logs/

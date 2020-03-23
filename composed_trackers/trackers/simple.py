@@ -264,7 +264,7 @@ class SimpleTracker(BaseTracker):
 
         assert is_int(index)
         index = int(index)
-        assert (index == len(channel)), f'Index {index} must be equal to {len(channel)}'
+        # assert (index == len(channel)), f'Index {index} must be equal to {len(channel)}'
 
         if timestamp is None:
             timestamp = time.time()
