@@ -3,3 +3,4 @@ mnist
 lightning_logs/
 default/
 logs/
+Experiment 00 name/

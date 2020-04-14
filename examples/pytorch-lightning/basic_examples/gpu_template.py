@@ -1,16 +1,17 @@
 """
-Runs a model on a single node across N-gpus.
+Runs a model on a single node across multiple gpus.
 """
 import os
 from argparse import ArgumentParser
-from pathlib import Path
+
 import numpy as np
 import torch
 
-from pl_examples.basic_examples.lightning_module_template import LightningTemplateModel
-from pytorch_lightning import Trainer
-from pytorch_lightning.logging import TestTubeLogger
+import pytorch_lightning as pl
+from pl_examples.models.lightning_template import LightningTemplateModel
 
+
+from pathlib import Path
 from composed_trackers import Config, build_from_cfg, TRACKERS
 from composed_trackers.adapters.pytorch_lightning import adapt_to_pytorch_lightning
 
@@ -30,7 +31,6 @@ def main(hparams):
     # ------------------------
     model = LightningTemplateModel(hparams)
 
-
     # init Config
     #tracker = TestTubeLogger(save_dir='./logs')
     fn_config = Path('configs/example_gpu_00.yaml')
@@ -48,11 +48,13 @@ def main(hparams):
     # ------------------------
     # 2 INIT TRAINER
     # ------------------------
-    trainer = Trainer(
-        logger = tracker,
+    trainer = pl.Trainer(
+        logger=tracker,
+        max_epochs=hparams.epochs,
         gpus=hparams.gpus,
         distributed_backend=hparams.distributed_backend,
-        use_amp=hparams.use_16bit
+        precision=16 if hparams.use_16bit else 32,
+        row_log_interval=cfg.tracker.row_log_interval,
     )
 
     # ------------------------
